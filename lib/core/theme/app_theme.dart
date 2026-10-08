@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // =========================================================
-  // COMMON COLORS
-  // =========================================================
+
 
   static const Color primaryColor = Color(0xFF4F46E5);
   static const Color secondaryColor = Color(0xFF14B8A6);
@@ -114,9 +112,7 @@ class AppTheme {
       ),
     ),
 
-    // -------------------------------------------------------
-    // TYPOGRAPHY
-    // -------------------------------------------------------
+  
 
     textTheme: const TextTheme(
       headlineLarge: TextStyle(
@@ -259,9 +255,7 @@ class AppTheme {
       ),
     ),
 
-    // -------------------------------------------------------
-    // TYPOGRAPHY
-    // -------------------------------------------------------
+  
 
     textTheme: const TextTheme(
       headlineLarge: TextStyle(

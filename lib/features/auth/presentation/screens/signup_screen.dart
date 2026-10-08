@@ -104,10 +104,6 @@ class _SignupScreenState extends State<SignupScreen> {
       );
     }
   }
-
-  // =========================
-  // SHOW MESSAGE
-  // =========================
   void showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

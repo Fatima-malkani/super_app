@@ -6,7 +6,6 @@ import '../cubit/auth_cubit.dart';
 import 'signup_screen.dart';
 import '../../../home/presentation/screens/home_screen.dart';
 
-// Later we will import HomeScreen here.
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -62,19 +61,11 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // =========================
-  // SHOW MESSAGE
-  // =========================
-
   void showMessage(String message) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
   }
-
-  // =========================
-  // DISPOSE
-  // =========================
 
   @override
   void dispose() {
@@ -83,10 +74,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     super.dispose();
   }
-
-  // =========================
-  // UI
-  // =========================
 
   @override
   Widget build(BuildContext context) {

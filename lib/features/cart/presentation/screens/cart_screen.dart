@@ -66,10 +66,6 @@ class CartScreen extends StatelessWidget {
             );
           }
 
-          // -------------------------
-          // ERROR
-          // -------------------------
-
           if (snapshot.hasError) {
             return Center(
               child: Padding(
@@ -112,10 +108,6 @@ class CartScreen extends StatelessWidget {
             );
           }
 
-          // -------------------------
-          // NO DATA
-          // -------------------------
-
           if (!snapshot.hasData) {
             return const Center(
               child: Text(
@@ -126,11 +118,6 @@ class CartScreen extends StatelessWidget {
           }
 
           final cartItems = snapshot.data!.docs;
-
-          // -------------------------
-          // EMPTY CART
-          // -------------------------
-
           if (cartItems.isEmpty) {
             return const Center(
               child: Column(
@@ -190,9 +177,6 @@ class CartScreen extends StatelessWidget {
 
           return Column(
             children: [
-              // -------------------------
-              // PRODUCT LIST
-              // -------------------------
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.all(20),
@@ -228,9 +212,7 @@ class CartScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
 
                         children: [
-                          // =========================
-                          // PRODUCT ICON
-                          // =========================
+                          
                           Container(
                             height: 70,
                             width: 70,
@@ -250,9 +232,6 @@ class CartScreen extends StatelessWidget {
 
                           const SizedBox(width: 15),
 
-                          // =========================
-                          // PRODUCT DETAILS
-                          // =========================
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,9 +301,6 @@ class CartScreen extends StatelessWidget {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // =========================
-                                      // DECREASE
-                                      // =========================
                                       IconButton(
                                         onPressed: () async {
                                           if (quantity > 1) {
@@ -348,9 +324,6 @@ class CartScreen extends StatelessWidget {
                                         padding: EdgeInsets.zero,
                                       ),
 
-                                      // =========================
-                                      // QUANTITY
-                                      // =========================
                                       Text(
                                         '$quantity',
 
@@ -361,9 +334,6 @@ class CartScreen extends StatelessWidget {
                                         ),
                                       ),
 
-                                      // =========================
-                                      // INCREASE
-                                      // =========================
                                       IconButton(
                                         onPressed: () async {
                                           await item.reference.update({
@@ -390,10 +360,7 @@ class CartScreen extends StatelessWidget {
                               ],
                             ),
                           ),
-
-                          // =========================
-                          // DELETE BUTTON
-                          // =========================
+ 
                           IconButton(
                             onPressed: () async {
                               await item.reference.delete();
@@ -438,9 +405,6 @@ class CartScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
 
                     children: [
-                      // -------------------------
-                      // TOTAL
-                      // -------------------------
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
 

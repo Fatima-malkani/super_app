@@ -8,7 +8,6 @@ import '../../../bookings/presentation/screens/my_bookings_screen.dart';
 import '../../../wallet/presentation/screens/wallet_screen.dart';
 import '../../../shop/presentation/screens/shop_screen.dart';
 import '../../../cart/presentation/screens/cart_screen.dart';
-import '../../../orders/presentation/screens/my_orders_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/theme.dart';
 

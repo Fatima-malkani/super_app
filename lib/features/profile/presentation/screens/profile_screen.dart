@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../auth/presentation/screens/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,375 +13,269 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final ImagePicker _imagePicker = ImagePicker();
+  String userName = 'User';
+  String userEmail = '';
 
-  final nameController = TextEditingController();
+  bool isLoading = true;
 
-  bool isUpdatingName = false;
-  bool isUploadingImage = false;
-
-  // =========================================================
-  // GET CURRENT USER ID
-  // =========================================================
-
-  String? get userId {
-    return context.read<AuthCubit>().state?.uid;
+  @override
+  void initState() {
+    super.initState();
+    loadUserData();
   }
 
-  // =========================================================
-  // PICK PROFILE IMAGE
-  // =========================================================
-
-  Future<void> pickProfileImage() async {
+  Future<void> loadUserData() async {
     try {
-      final image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-      );
+      final user = FirebaseAuth.instance.currentUser;
 
-      if (image == null) {
+      if (user == null) {
         return;
       }
 
-      setState(() {
-        isUploadingImage = true;
-      });
-
-      final result = await context.read<AuthCubit>().uploadProfileImage(image);
+      final document = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
 
       if (!mounted) return;
 
-      setState(() {
-        isUploadingImage = false;
-      });
+      if (document.exists) {
+        final data = document.data();
 
-      if (result == null) {
-        showMessage('Could not upload profile image');
-      } else if (result == 'not-logged-in') {
-        showMessage('Please login again');
-      } else if (result == 'upload-failed') {
-        showMessage('Image upload failed');
+        setState(() {
+          userName = data?['name']?.toString() ?? 'User';
+          userEmail = data?['email']?.toString() ?? user.email ?? '';
+          isLoading = false;
+        });
       } else {
-        showMessage('Profile image updated successfully');
+        setState(() {
+          userEmail = user.email ?? '';
+          isLoading = false;
+        });
       }
     } catch (e) {
+      print('PROFILE ERROR: $e');
+
       if (!mounted) return;
 
       setState(() {
-        isUploadingImage = false;
+        isLoading = false;
       });
-
-      showMessage('Could not select image');
-
-      print('IMAGE PICKER ERROR: $e');
     }
   }
 
-  // =========================================================
-  // EDIT NAME
-  // =========================================================
+  Future<void> logout() async {
+    try {
+      await FirebaseAuth.instance.signOut();
 
-  void openEditNameDialog(String currentName) {
-    nameController.text = currentName;
+      if (!mounted) return;
 
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        bool dialogLoading = false;
-
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Edit Name'),
-
-              content: TextField(
-                controller: nameController,
-                textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(
-                  hintText: 'Enter your name',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-              ),
-
-              actions: [
-                TextButton(
-                  onPressed: dialogLoading
-                      ? null
-                      : () {
-                          Navigator.pop(dialogContext);
-                        },
-                  child: const Text('Cancel'),
-                ),
-
-                ElevatedButton(
-                  onPressed: dialogLoading
-                      ? null
-                      : () async {
-                          final name = nameController.text.trim();
-
-                          if (name.isEmpty) {
-                            showMessage('Name cannot be empty');
-                            return;
-                          }
-
-                          setDialogState(() {
-                            dialogLoading = true;
-                          });
-
-                          final error = await context
-                              .read<AuthCubit>()
-                              .updateProfileName(name);
-
-                          if (!mounted) return;
-
-                          if (error == null) {
-                            Navigator.pop(dialogContext);
-
-                            showMessage('Name updated successfully');
-                          } else {
-                            setDialogState(() {
-                              dialogLoading = false;
-                            });
-
-                            showMessage('Could not update name');
-                          }
-                        },
-
-                  child: dialogLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      print('LOGOUT ERROR: $e');
+    }
   }
-
-  // =========================================================
-  // SHOW MESSAGE
-  // =========================================================
-
-  void showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  @override
-  void dispose() {
-    nameController.dispose();
-
-    super.dispose();
-  }
-
-  // =========================================================
-  // BUILD
-  // =========================================================
 
   @override
   Widget build(BuildContext context) {
-    final uid = userId;
-
-    if (uid == null) {
-      return const Scaffold(body: Center(child: Text('Please login first')));
-    }
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      backgroundColor: AppTheme.backgroundColor,
 
-      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .snapshots(),
+      appBar: AppBar(
+        backgroundColor: AppTheme.backgroundColor,
+        elevation: 0,
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            color: AppTheme.textColor,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
 
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
 
-          if (snapshot.hasError) {
-            return const Center(child: Text('Could not load profile'));
-          }
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
 
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('Profile not found'));
-          }
-
-          final data = snapshot.data!.data()!;
-
-          final name = data['name'] ?? 'User';
-
-          final email = data['email'] ?? '';
-
-          final profileImageUrl = data['profileImageUrl'];
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-
-            child: Column(
-              children: [
-                // =================================================
-                // PROFILE IMAGE
-                // =================================================
-                Stack(
-                  alignment: Alignment.bottomRight,
-
-                  children: [
-                    CircleAvatar(
-                      radius: 60,
-
-                      backgroundColor: AppTheme.primaryColor,
-
-                      backgroundImage:
-                          profileImageUrl != null &&
-                              profileImageUrl.toString().isNotEmpty
-                          ? NetworkImage(profileImageUrl)
-                          : null,
-
-                      child:
-                          profileImageUrl == null ||
-                              profileImageUrl.toString().isEmpty
-                          ? const Icon(
-                              Icons.person,
-                              size: 60,
-                              color: Colors.white,
-                            )
-                          : null,
+                  // =========================
+                  // PROFILE IMAGE
+                  // =========================
+                  Container(
+                    height: 90,
+                    width: 90,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      shape: BoxShape.circle,
                     ),
 
-                    // Camera button
-                    GestureDetector(
-                      onTap: isUploadingImage ? null : pickProfileImage,
-
-                      child: Container(
-                        height: 42,
-                        width: 42,
-
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
+                    child: Center(
+                      child: Text(
+                        userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
                         ),
+                      ),
+                    ),
+                  ),
 
-                        child: isUploadingImage
-                            ? const Padding(
-                                padding: EdgeInsets.all(10),
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 20,
-                              ),
+                  const SizedBox(height: 15),
+
+                  // =========================
+                  // USER NAME
+                  // =========================
+                  Text(
+                    userName,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textColor,
+                    ),
+                  ),
+
+                  const SizedBox(height: 5),
+
+                  // =========================
+                  // EMAIL
+                  // =========================
+                  Text(
+                    userEmail,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.secondaryTextColor,
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // =========================
+                  // PERSONAL INFORMATION
+                  // =========================
+                  profileOption(
+                    icon: Icons.person_outline,
+                    title: 'Personal Information',
+                    subtitle: 'View your account information',
+                    onTap: () {},
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // =========================
+                  // ACCOUNT SETTINGS
+                  // =========================
+                  profileOption(
+                    icon: Icons.settings_outlined,
+                    title: 'Account Settings',
+                    subtitle: 'Manage your account',
+                    onTap: () {},
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // =========================
+                  // LOGOUT
+                  // =========================
+                  profileOption(
+                    icon: Icons.logout,
+                    title: 'Logout',
+                    subtitle: 'Sign out from your account',
+                    onTap: logout,
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+
+  // =========================
+  // PROFILE OPTION
+  // =========================
+
+  Widget profileOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      width: double.infinity,
+
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+      ),
+
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+
+          child: Row(
+            children: [
+              Container(
+                height: 50,
+                width: 50,
+
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+
+                child: Icon(icon, color: AppTheme.primaryColor, size: 25),
+              ),
+
+              const SizedBox(width: 15),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textColor,
+                      ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.secondaryTextColor,
                       ),
                     ),
                   ],
                 ),
+              ),
 
-                const SizedBox(height: 25),
-
-                // =================================================
-                // NAME
-                // =================================================
-                Text(
-                  name.toString(),
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-
-                const SizedBox(height: 8),
-
-                // =================================================
-                // EMAIL
-                // =================================================
-                Text(
-                  email.toString(),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-
-                const SizedBox(height: 35),
-
-                // =================================================
-                // NAME CARD
-                // =================================================
-                Card(
-                  child: ListTile(
-                    leading: const Icon(
-                      Icons.person_outline,
-                      color: AppTheme.primaryColor,
-                    ),
-
-                    title: const Text('Name'),
-
-                    subtitle: Text(name.toString()),
-
-                    trailing: IconButton(
-                      icon: const Icon(Icons.edit),
-
-                      onPressed: () {
-                        openEditNameDialog(name.toString());
-                      },
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // =================================================
-                // EMAIL CARD
-                // =================================================
-                Card(
-                  child: ListTile(
-                    leading: const Icon(
-                      Icons.email_outlined,
-                      color: AppTheme.primaryColor,
-                    ),
-
-                    title: const Text('Email'),
-
-                    subtitle: Text(email.toString()),
-                  ),
-                ),
-
-                const SizedBox(height: 30),
-
-                // =================================================
-                // LOGOUT
-                // =================================================
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      await context.read<AuthCubit>().logout();
-
-                      if (!mounted) return;
-
-                      Navigator.pop(context);
-                    },
-
-                    icon: const Icon(Icons.logout),
-
-                    label: const Text('Logout'),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: AppTheme.secondaryTextColor,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
